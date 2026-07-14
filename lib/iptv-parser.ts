@@ -15,6 +15,7 @@ export interface IPTVPlaylist {
   channelsCount: number;
   url?: string;
   channels: IPTVChannel[];
+  isOwnerManaged?: boolean;
 }
 
 /**

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import dynamic from 'next/dynamic';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 const HomeClient = dynamic(() => import('@/components/HomeClient'), {
   ssr: false,
@@ -24,5 +25,9 @@ const HomeClient = dynamic(() => import('@/components/HomeClient'), {
 });
 
 export default function PageClient() {
-  return <HomeClient />;
+  return (
+    <ErrorBoundary>
+      <HomeClient />
+    </ErrorBoundary>
+  );
 }

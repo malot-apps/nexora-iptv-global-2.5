@@ -148,6 +148,118 @@ export default function Home() {
     };
   }, [mounted]);
 
+  // Fetch and sync owner-managed playlists from sources.json
+  useEffect(() => {
+    if (!mounted) return;
+
+    const syncOwnerPlaylists = async () => {
+      try {
+        const basePath = process.env.NODE_ENV === 'production' ? '/nexora-iptv-global-2.5' : '';
+        const res = await fetch(`${basePath}/playlists/sources.json`);
+        if (!res.ok) {
+          console.warn('sources.json was not found or failed to load. Continuing normally.');
+          return;
+        }
+
+        const data = await res.json();
+        if (!data || !Array.isArray(data.playlists)) {
+          console.warn('sources.json is malformed. Continuing normally.');
+          return;
+        }
+
+        const ownerPlaylists = data.playlists.filter((p: any) => p && typeof p === 'object' && p.enabled !== false && p.id && p.name && p.url);
+        if (ownerPlaylists.length === 0) return;
+
+        let playlistsUpdated = false;
+        let currentPlaylists = [...playlistsRef.current];
+
+        for (const op of ownerPlaylists) {
+          const existing = currentPlaylists.find(p => p.id === op.id);
+          
+          if (!existing || existing.url !== op.url || existing.name !== op.name) {
+            try {
+              let text = '';
+              let fetched = false;
+
+              try {
+                const proxyUrl = `/api/proxy?url=${encodeURIComponent(op.url)}`;
+                const response = await fetch(proxyUrl);
+                if (response.ok) {
+                  text = await response.text();
+                  fetched = true;
+                }
+              } catch (e) {
+                // Ignore and try fallback
+              }
+
+              if (!fetched) {
+                try {
+                  const publicProxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(op.url)}`;
+                  const response = await fetch(publicProxyUrl);
+                  if (response.ok) {
+                    text = await response.text();
+                    fetched = true;
+                  }
+                } catch (e) {
+                  // Ignore and try direct
+                }
+              }
+
+              if (!fetched) {
+                const response = await fetch(op.url);
+                if (response.ok) {
+                  text = await response.text();
+                  fetched = true;
+                }
+              }
+
+              if (fetched && text) {
+                const channels = parseM3U(text);
+                if (channels.length > 0) {
+                  const parsedPlaylist: IPTVPlaylist = {
+                    id: op.id,
+                    name: op.name,
+                    channelsCount: channels.length,
+                    url: op.url,
+                    channels: channels,
+                    isOwnerManaged: true
+                  };
+
+                  if (existing) {
+                    currentPlaylists = currentPlaylists.map(p => p.id === op.id ? parsedPlaylist : p);
+                  } else {
+                    currentPlaylists.push(parsedPlaylist);
+                  }
+                  playlistsUpdated = true;
+                }
+              }
+            } catch (err) {
+              console.error(`Failed to fetch owner playlist: ${op.name}`, err);
+            }
+          }
+        }
+
+        if (playlistsUpdated) {
+          setPlaylists(currentPlaylists);
+          localStorage.setItem('nexora_playlists', JSON.stringify(currentPlaylists));
+
+          const currentActive = currentPlaylists.find(p => p.id === activePlaylistId);
+          if (!currentActive && currentPlaylists.length > 0) {
+            const firstPlaylist = currentPlaylists[0];
+            setActivePlaylistId(firstPlaylist.id);
+            if (firstPlaylist.channels.length > 0) {
+              setActiveChannel(firstPlaylist.channels[0]);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Failed to sync owner playlists:', e);
+      }
+    };
+
+    syncOwnerPlaylists();
+  }, [mounted]);
+
   const formatWatchedAt = (timestamp: number) => {
     if (!currentMs) return 'Just now';
     const diff = currentMs - timestamp;

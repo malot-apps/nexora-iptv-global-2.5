@@ -172,7 +172,8 @@ export default function ChannelList({
     return () => {
       active = false;
     };
-  }, [paginatedChannels, healthStatus]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paginatedChannels]);
 
   const renderStatusDot = (channelId: string) => {
     const status = healthStatus[channelId];
