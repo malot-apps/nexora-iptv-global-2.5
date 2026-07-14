@@ -1,6 +1,6 @@
-# NEXORA IPTV — GLOBAL PREMIUM (v2.5.0)
+# NEXORA IPTV — GLOBAL PREMIUM (v3.0.0)
 
-NEXORA is an elite, high-performance, client-side IPTV streaming terminal built using Next.js 15, React 19, Tailwind CSS, and `motion` (Framer Motion). It is engineered specifically for pristine catalog organization, rapid-load stream playback, live sports scheduling, and high-performance stream hygiene.
+NEXORA is an elite, high-performance IPTV streaming terminal built using Next.js 15, React 19, Tailwind CSS, and `motion` (Framer Motion). It is engineered specifically for pristine catalog organization, rapid-load stream playback, live sports scheduling, and high-performance stream hygiene.
 
 ---
 
@@ -36,6 +36,9 @@ Powered by `HLS.js` with direct Native video player fallbacks, NEXORA features:
 ```
 .
 ├── app/                  # Next.js App Router root (Pages & Layout)
+│   ├── api/              # Native API Routes
+│   │   ├── ping/         # Active Stream Ping checking service
+│   │   └── proxy/        # CORS Proxy request routing
 │   ├── globals.css       # Global styles with Tailwind CSS integrations
 │   ├── layout.tsx        # Base Document & Theme injector
 │   └── page.tsx          # Main entry route
@@ -56,23 +59,26 @@ Powered by `HLS.js` with direct Native video player fallbacks, NEXORA features:
 
 ---
 
-## 🚀 Production Building & Static Deployment
+## 🚀 Production Building & Vercel Deployment
 
-NEXORA compiles to a highly-optimized, single-page application (SPA) designed to run serverlessly on CDN architectures such as GitHub Pages.
+NEXORA is fully configured for native deployment on Vercel, utilizing Next.js App Router Serverless Functions for dynamic CORS streaming proxies and real-time stream ping checks.
 
 ### Local Development
+To run the server in development mode:
 ```bash
 npm run dev
 ```
 
-### Static Build compilation
-To build the static export:
+### Production Build compilation
+To build the application for production locally or during CI/CD:
 ```bash
 npm run build
 ```
-This outputs optimized, production-ready HTML, CSS, and JS in the `/out` directory.
 
-### GitHub Pages Configuration
-For GitHub Pages deployment, ensure:
-1.  **Repository Path Compatibility**: Ensure the Next.js `basePath` inside `next.config.ts` aligns with your repository name (e.g., `/nexora-iptv-global-2.5`).
-2.  **Asset Handling**: Reference static assets relatively using prefix helpers or explicit base URLs to prevent resource loading failures.
+This outputs an optimized, production-ready server-side bundle in the standard `.next` directory, which Vercel reads natively to provision edge assets and Serverless API functions.
+
+### Vercel Deployment Steps
+1. **Connect Repository**: Import your NEXORA IPTV repository to Vercel.
+2. **Framework Preset**: Vercel automatically detects Next.js.
+3. **Build Settings**: Vercel automatically uses the standard build command (`npm run build`) and output directory (`.next`). No overrides or environment variables are required.
+4. **Deploy**: Enjoy dynamic, fast load times with functional backend proxies!

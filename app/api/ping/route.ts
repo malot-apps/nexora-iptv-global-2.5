@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export const dynamic = 'force-static';
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
-  if (process.env.NODE_ENV === 'production') {
-    return NextResponse.json({ message: "API not available on static export" });
-  }
-
   const reqUrl = req ? req['url'] : '';
   const urlParam = reqUrl ? new URL(reqUrl).searchParams.get('url') : null;
 

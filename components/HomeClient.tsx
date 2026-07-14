@@ -196,7 +196,7 @@ export default function Home() {
 
     const syncOwnerPlaylists = async () => {
       try {
-        const basePath = process.env.NODE_ENV === 'production' ? '/nexora-iptv-global-2.5' : '';
+        const basePath = '';
         const res = await fetch(`${basePath}/playlists/sources.json`);
         if (!res.ok) {
           console.warn('sources.json was not found or failed to load. Continuing normally.');
