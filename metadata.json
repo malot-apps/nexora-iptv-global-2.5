@@ -1,0 +1,6 @@
+{
+  "name": "NEXORA",
+  "description": "NEXORA is a high-performance IPTV & Sports Streaming client designed with a premium Frosted Glass aesthetic. Manage your playlists, watch live channels, organize favorites, and enjoy smooth M3U8 playback with auto-categorization.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
