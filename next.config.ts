@@ -3,14 +3,14 @@ import type {NextConfig} from 'next';
 const isProd = process.env.NODE_ENV === 'production';
 
 const nextConfig: NextConfig = {
-  distDir: isProd ? '.next-prod' : '.next',
+  distDir: (isProd && process.env.GITHUB_ACTIONS !== 'true') ? '.next-prod' : undefined,
   reactStrictMode: true,
   typescript: {
     ignoreBuildErrors: false,
   },
   output: 'export',
-  basePath: isProd ? '/nexora-iptv-global-' : '',
-  assetPrefix: isProd ? '/nexora-iptv-global-/' : undefined,
+  basePath: isProd ? '/nexora-iptv-global-2.5' : '',
+  assetPrefix: isProd ? '/nexora-iptv-global-2.5/' : undefined,
   // Allow access to remote image placeholder.
   images: {
     unoptimized: true,

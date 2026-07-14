@@ -43,6 +43,20 @@ jobs:
         run: npm run build
         env:
           NODE_ENV: production
+          GITHUB_ACTIONS: "true"
+
+      - name: Verify Build Output Directory
+        run: |
+          echo "==== Current Workspace Directory List ===="
+          ls -la
+          echo "==== Verifying output folder exists ===="
+          if [ -d "./out" ]; then
+            echo "Directory ./out exists! Listing contents:"
+            ls -la ./out
+          else
+            echo "Error: ./out directory does not exist!"
+            exit 1
+          fi
 
       - name: Upload Static Artifacts
         uses: actions/upload-pages-artifact@v3
