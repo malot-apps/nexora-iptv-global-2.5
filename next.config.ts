@@ -3,6 +3,7 @@ import type {NextConfig} from 'next';
 const isProd = process.env.NODE_ENV === 'production';
 
 const nextConfig: NextConfig = {
+  distDir: isProd ? '.next-prod' : '.next',
   reactStrictMode: true,
   typescript: {
     ignoreBuildErrors: false,

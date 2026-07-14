@@ -7,8 +7,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ message: "API not available on static export" });
   }
 
-  const reqUrl = req['url'] || req.url;
-  const urlParam = new URL(reqUrl).searchParams.get('url');
+  const reqUrl = req ? req['url'] : '';
+  const urlParam = reqUrl ? new URL(reqUrl).searchParams.get('url') : null;
 
   if (!urlParam) {
     return NextResponse.json({ error: 'Missing url parameter' }, { status: 400 });
