@@ -48,7 +48,14 @@ const AUTO_PROXY_KEY = 'nexora_auto_proxy_enabled';
  */
 export function getPreferredProxyId(): string {
   if (typeof window === 'undefined') return 'local';
-  return localStorage.getItem(PROXY_PREFERENCE_KEY) || 'local';
+  
+  // If hosted on GitHub Pages or other static sites, use corsproxy.io as the default
+  const isStaticHosting = window.location.hostname.endsWith('github.io') || 
+                          window.location.hostname.includes('githubpreview') || 
+                          window.location.origin.includes('github');
+  const defaultProxy = isStaticHosting ? 'corsproxy.io' : 'local';
+
+  return localStorage.getItem(PROXY_PREFERENCE_KEY) || defaultProxy;
 }
 
 /**

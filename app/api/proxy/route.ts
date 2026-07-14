@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-static';
+
 export async function GET(req: NextRequest) {
-  const urlParam = req.nextUrl.searchParams.get('url');
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ message: "API not available on static export" });
+  }
+
+  const reqUrl = req['url'] || req.url;
+  const urlParam = new URL(reqUrl).searchParams.get('url');
 
   if (!urlParam) {
     return NextResponse.json({ error: 'Missing url parameter' }, { status: 400 });

@@ -121,12 +121,31 @@ export default function ChannelList({
             ...prev,
             [ch.id]: data.reachable ? 'online' : 'offline'
           }));
-        } else {
-          setHealthStatus(prev => ({
-            ...prev,
-            [ch.id]: 'offline'
-          }));
+          return;
         }
+      } catch (err) {
+        // Fallback to direct client check
+      }
+
+      // Client-side/GitHub Pages direct ping fallback
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+        await fetch(ch.url, {
+          method: 'GET',
+          mode: 'no-cors',
+          signal: controller.signal,
+          headers: {
+            'Accept': '*/*',
+          }
+        });
+        clearTimeout(timeoutId);
+        if (!active) return;
+        setHealthStatus(prev => ({
+          ...prev,
+          [ch.id]: 'online'
+        }));
       } catch (err) {
         if (!active) return;
         setHealthStatus(prev => ({
