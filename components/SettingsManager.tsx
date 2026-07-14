@@ -154,13 +154,34 @@ export default function SettingsManager({
       const urls = localStorage.getItem('nexora_personal_tv_urls');
       const channels = localStorage.getItem('nexora_personal_tv_channels');
       
+      let parsedUrls = [];
+      let parsedChannels = [];
+
+      if (urls) {
+        try {
+          const parsed = JSON.parse(urls);
+          if (Array.isArray(parsed)) parsedUrls = parsed;
+        } catch (err) {
+          console.error('Failed to parse personal TV URLs for export', err);
+        }
+      }
+
+      if (channels) {
+        try {
+          const parsed = JSON.parse(channels);
+          if (Array.isArray(parsed)) parsedChannels = parsed;
+        } catch (err) {
+          console.error('Failed to parse personal TV channels for export', err);
+        }
+      }
+
       const payload = {
         app: 'Nexora Premium',
         exportedAt: new Date().toISOString(),
         version: 'v2.5.0-premium',
         personalTV: {
-          urls: urls ? JSON.parse(urls) : [],
-          channels: channels ? JSON.parse(channels) : []
+          urls: parsedUrls,
+          channels: parsedChannels
         }
       };
 

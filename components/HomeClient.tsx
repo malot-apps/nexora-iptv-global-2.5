@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { 
   Tv, Trophy, List, Play, Check, Settings,
   Trash2, ShieldCheck, Heart, AlertCircle, Info, Radio, Activity, Clock, Send, Facebook
@@ -69,7 +69,14 @@ export default function Home() {
         let loadedPlaylists: IPTVPlaylist[] = [];
         const storedPlaylists = localStorage.getItem('nexora_playlists');
         if (storedPlaylists) {
-          loadedPlaylists = JSON.parse(storedPlaylists);
+          try {
+            const parsed = JSON.parse(storedPlaylists);
+            if (Array.isArray(parsed)) {
+              loadedPlaylists = parsed.filter(p => p && typeof p === 'object' && typeof p.id === 'string' && typeof p.name === 'string' && Array.isArray(p.channels));
+            }
+          } catch (e) {
+            console.error('Failed to parse nexora_playlists', e);
+          }
         }
         setPlaylists(loadedPlaylists);
 
@@ -83,7 +90,7 @@ export default function Home() {
         setActivePlaylistId(activeId);
 
         const currentPlaylist = loadedPlaylists.find(p => p.id === activeId);
-        if (currentPlaylist && currentPlaylist.channels.length > 0) {
+        if (currentPlaylist && Array.isArray(currentPlaylist.channels) && currentPlaylist.channels.length > 0) {
           setActiveChannel(currentPlaylist.channels[0]);
         } else {
           setActiveChannel(null);
@@ -96,28 +103,63 @@ export default function Home() {
 
         const storedFavorites = localStorage.getItem('nexora_favorites');
         if (storedFavorites) {
-          setFavorites(JSON.parse(storedFavorites));
+          try {
+            const parsed = JSON.parse(storedFavorites);
+            if (Array.isArray(parsed)) {
+              setFavorites(parsed.filter(item => typeof item === 'string'));
+            }
+          } catch (e) {
+            console.error('Failed to parse nexora_favorites', e);
+          }
         }
 
         const storedContinueWatching = localStorage.getItem('nexora_continue_watching');
         if (storedContinueWatching) {
-          setContinueWatching(JSON.parse(storedContinueWatching));
+          try {
+            const parsed = JSON.parse(storedContinueWatching);
+            if (Array.isArray(parsed)) {
+              setContinueWatching(parsed.filter(ch => ch && typeof ch === 'object' && typeof ch.id === 'string' && typeof ch.url === 'string'));
+            }
+          } catch (e) {
+            console.error('Failed to parse nexora_continue_watching', e);
+          }
         }
 
         const storedRecentlyWatched = localStorage.getItem('nexora_recently_watched');
         if (storedRecentlyWatched) {
-          setRecentlyWatched(JSON.parse(storedRecentlyWatched));
+          try {
+            const parsed = JSON.parse(storedRecentlyWatched);
+            if (Array.isArray(parsed)) {
+              setRecentlyWatched(parsed.filter(item => item && typeof item === 'object' && typeof item.id === 'string' && typeof item.url === 'string'));
+            }
+          } catch (e) {
+            console.error('Failed to parse nexora_recently_watched', e);
+          }
         }
 
         // Load Personal TV states
         const storedPersonalUrls = localStorage.getItem('nexora_personal_tv_urls');
         if (storedPersonalUrls) {
-          setPersonalUrls(JSON.parse(storedPersonalUrls));
+          try {
+            const parsed = JSON.parse(storedPersonalUrls);
+            if (Array.isArray(parsed)) {
+              setPersonalUrls(parsed.filter(u => u && typeof u === 'object' && typeof u.id === 'string' && typeof u.url === 'string'));
+            }
+          } catch (e) {
+            console.error('Failed to parse nexora_personal_tv_urls', e);
+          }
         }
 
         const storedPersonalChannels = localStorage.getItem('nexora_personal_tv_channels');
         if (storedPersonalChannels) {
-          setPersonalChannels(JSON.parse(storedPersonalChannels));
+          try {
+            const parsed = JSON.parse(storedPersonalChannels);
+            if (Array.isArray(parsed)) {
+              setPersonalChannels(parsed.filter(ch => ch && typeof ch === 'object' && typeof ch.id === 'string' && typeof ch.url === 'string'));
+            }
+          } catch (e) {
+            console.error('Failed to parse nexora_personal_tv_channels', e);
+          }
         }
 
         const storedPersonalLastSynced = localStorage.getItem('nexora_personal_tv_last_synced');
@@ -272,7 +314,7 @@ export default function Home() {
     return `${days}d ago`;
   };
 
-  const handleSelectChannel = (channel: IPTVChannel | null) => {
+  const handleSelectChannel = useCallback((channel: IPTVChannel | null) => {
     setActiveChannel(channel);
     if (!channel) return;
     
@@ -297,7 +339,7 @@ export default function Home() {
       localStorage.setItem('nexora_recently_watched', JSON.stringify(updated));
       return updated;
     });
-  };
+  }, []);
 
   // Sync activePlaylistId to localStorage when changed
   useEffect(() => {
@@ -307,69 +349,85 @@ export default function Home() {
   }, [activePlaylistId, mounted]);
 
   // Save state to localStorage when changed
-  const savePlaylistsToStorage = (updated: IPTVPlaylist[]) => {
+  const savePlaylistsToStorage = useCallback((updated: IPTVPlaylist[]) => {
     setPlaylists(updated);
     localStorage.setItem('nexora_playlists', JSON.stringify(updated));
-  };
+  }, []);
 
-  const handlePlaylistLoaded = (newPlaylist: IPTVPlaylist) => {
-    const exists = playlists.some(p => p.id === newPlaylist.id);
-    let updated: IPTVPlaylist[] = [];
-    if (exists) {
-      updated = playlists.map(p => p.id === newPlaylist.id ? newPlaylist : p);
-    } else {
-      updated = [...playlists, newPlaylist];
-    }
-
-    savePlaylistsToStorage(updated);
+  const handlePlaylistLoaded = useCallback((newPlaylist: IPTVPlaylist) => {
+    setPlaylists(prevPlaylists => {
+      const exists = prevPlaylists.some(p => p.id === newPlaylist.id);
+      let updated: IPTVPlaylist[] = [];
+      if (exists) {
+        updated = prevPlaylists.map(p => p.id === newPlaylist.id ? newPlaylist : p);
+      } else {
+        updated = [...prevPlaylists, newPlaylist];
+      }
+      localStorage.setItem('nexora_playlists', JSON.stringify(updated));
+      return updated;
+    });
     setActivePlaylistId(newPlaylist.id);
     if (newPlaylist.channels.length > 0) {
       setActiveChannel(newPlaylist.channels[0]);
     }
     setActiveTab('watch'); // automatically switch to TV mode when loaded
-  };
+  }, []);
 
-  const handleDeletePlaylist = (id: string, e: React.MouseEvent) => {
+  const handleDeletePlaylist = useCallback((id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     
     if (confirm('Are you sure you want to delete this playlist from your browser cache?')) {
-      const updated = playlists.filter(p => p.id !== id);
-      savePlaylistsToStorage(updated);
+      setPlaylists(prevPlaylists => {
+        const updated = prevPlaylists.filter(p => p.id !== id);
+        localStorage.setItem('nexora_playlists', JSON.stringify(updated));
 
-      if (activePlaylistId === id) {
-        if (updated.length > 0) {
-          setActivePlaylistId(updated[0].id);
-          setActiveChannel(updated[0].channels[0] || null);
-        } else {
-          setActivePlaylistId(null);
-          setActiveChannel(null);
-          setActiveTab('import');
-        }
-      }
+        setTimeout(() => {
+          setActivePlaylistId(prevActiveId => {
+            if (prevActiveId === id) {
+              if (updated.length > 0) {
+                setActiveChannel(updated[0].channels[0] || null);
+                return updated[0].id;
+              } else {
+                setActiveChannel(null);
+                setActiveTab('import');
+                return null;
+              }
+            }
+            return prevActiveId;
+          });
+        }, 0);
+
+        return updated;
+      });
     }
-  };
+  }, []);
 
-  const handleSelectPlaylist = (id: string) => {
+  const handleSelectPlaylist = useCallback((id: string) => {
     setActivePlaylistId(id);
-    const target = playlists.find(p => p.id === id);
-    if (target && target.channels.length > 0) {
-      setActiveChannel(target.channels[0]);
-    } else {
-      setActiveChannel(null);
-    }
-  };
+    setPlaylists(prevPlaylists => {
+      const target = prevPlaylists.find(p => p.id === id);
+      if (target && target.channels.length > 0) {
+        setActiveChannel(target.channels[0]);
+      } else {
+        setActiveChannel(null);
+      }
+      return prevPlaylists;
+    });
+  }, []);
 
   // Toggle Favorites
-  const handleToggleFavorite = (channel: IPTVChannel) => {
-    let updated: string[] = [];
-    if (favorites.includes(channel.id)) {
-      updated = favorites.filter(id => id !== channel.id);
-    } else {
-      updated = [...favorites, channel.id];
-    }
-    setFavorites(updated);
-    localStorage.setItem('nexora_favorites', JSON.stringify(updated));
-  };
+  const handleToggleFavorite = useCallback((channel: IPTVChannel) => {
+    setFavorites(prev => {
+      let updated: string[] = [];
+      if (prev.includes(channel.id)) {
+        updated = prev.filter(id => id !== channel.id);
+      } else {
+        updated = [...prev, channel.id];
+      }
+      localStorage.setItem('nexora_favorites', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
 
   // Trigger manual full validation/rescan of the active playlist
   const handleReScan = async () => {
