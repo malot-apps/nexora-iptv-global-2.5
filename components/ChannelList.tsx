@@ -30,13 +30,11 @@ export default function ChannelList({
   const [currentPage, setCurrentPage] = useState(1);
   const [healthStatus, setHealthStatus] = useState<Record<string, 'checking' | 'online' | 'offline'>>({});
 
-  // Extract all unique groups / categories (unconditionally exclude offline channels)
+  // Extract all unique groups / categories
   const groups = useMemo(() => {
     const set = new Set<string>();
     channels.forEach(ch => {
-      if (healthStatus[ch.id] !== 'offline') {
-        if (ch.group) set.add(ch.group);
-      }
+      if (ch.group) set.add(ch.group);
     });
     // Sort groups and put General/Others at the end
     const list = Array.from(set).sort();
@@ -56,14 +54,11 @@ export default function ChannelList({
     });
 
     return ordered;
-  }, [channels, healthStatus]);
+  }, [channels]);
 
   // Filter channels based on Search, Group, and Favorites
   const filteredChannels = useMemo(() => {
     return channels.filter(ch => {
-      // Unconditionally exclude offline channels
-      if (healthStatus[ch.id] === 'offline') return false;
-
       // Favorite filter
       const isFav = favorites.includes(ch.id);
       if (showFavoritesOnly && !isFav) return false;
@@ -81,7 +76,7 @@ export default function ChannelList({
 
       return true;
     });
-  }, [channels, favorites, showFavoritesOnly, selectedGroup, searchTerm, healthStatus]);
+  }, [channels, favorites, showFavoritesOnly, selectedGroup, searchTerm]);
 
   // Paginated channels for high performance rendering
   const paginatedChannels = useMemo(() => {
@@ -90,6 +85,10 @@ export default function ChannelList({
   }, [filteredChannels, currentPage]);
 
   const totalPages = Math.ceil(filteredChannels.length / ITEMS_PER_PAGE);
+
+  const onlineCount = useMemo(() => {
+    return filteredChannels.filter(ch => healthStatus[ch.id] === 'online').length;
+  }, [filteredChannels, healthStatus]);
 
   // Passive health checks for paginated channels
   useEffect(() => {
@@ -243,7 +242,7 @@ export default function ChannelList({
               className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-bold text-xs select-none"
             >
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              Verified Live ({filteredChannels.length})
+              Verified Live ({onlineCount}/{filteredChannels.length})
             </div>
 
             {/* Layout switch */}
