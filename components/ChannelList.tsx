@@ -69,8 +69,8 @@ export default function ChannelList({
       // Search query filter
       if (searchTerm) {
         const query = searchTerm.toLowerCase();
-        const matchesName = ch.name.toLowerCase().includes(query);
-        const matchesGroup = ch.group.toLowerCase().includes(query);
+        const matchesName = (ch.name || '').toLowerCase().includes(query);
+        const matchesGroup = (ch.group || '').toLowerCase().includes(query);
         if (!matchesName && !matchesGroup) return false;
       }
 
@@ -101,7 +101,6 @@ export default function ChannelList({
     if (toCheck.length === 0) return;
 
     // Set status to checking for these channels
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHealthStatus(prev => {
       const next = { ...prev };
       toCheck.forEach(ch => {

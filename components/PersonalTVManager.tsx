@@ -112,8 +112,8 @@ export default function PersonalTVManager({
   // Filtered live channels
   const filteredChannels = React.useMemo(() => {
     return liveChannels.filter(ch => {
-      const matchesSearch = ch.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            ch.group.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = (ch.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+                            (ch.group || '').toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory = selectedCategory === 'All' || ch.group === selectedCategory;
       return matchesSearch && matchesCategory;
     });

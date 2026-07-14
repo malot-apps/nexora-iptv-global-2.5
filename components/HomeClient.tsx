@@ -1135,8 +1135,8 @@ export default function Home() {
 
                       <ChannelList 
                         channels={activePlaylist.channels.filter(c => {
-                          const grp = c.group.toLowerCase();
-                          const name = c.name.toLowerCase();
+                          const grp = (c.group || '').toLowerCase();
+                          const name = (c.name || '').toLowerCase();
                           return grp.includes('sport') || name.includes('sport') || name.includes('bein') || name.includes('espn');
                         })}
                         activeChannelId={activeChannel?.id}

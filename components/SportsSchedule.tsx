@@ -17,8 +17,8 @@ export default function SportsSchedule({ channels, onSelectChannel }: SportsSche
   const sportsChannels = useMemo(() => {
     if (!channels || channels.length === 0) return [];
     return channels.filter(ch => {
-      const grp = ch.group.toLowerCase();
-      const name = ch.name.toLowerCase();
+      const grp = (ch.group || '').toLowerCase();
+      const name = (ch.name || '').toLowerCase();
       return grp.includes('sport') || 
              name.includes('sport') || 
              name.includes('bein') || 
