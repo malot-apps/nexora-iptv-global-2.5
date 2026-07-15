@@ -64,7 +64,7 @@ export default class ErrorBoundary extends Component<Props, State> {
                 Application Exception Encountered
               </h2>
               <p id="error-description" className="text-xs text-slate-400 leading-relaxed max-w-sm">
-                Nexora IPTV ran into an unexpected client-side runtime exception. Your imported files or state might be corrupted.
+                Nexora encountered an unexpected client-side runtime error.
               </p>
             </div>
 

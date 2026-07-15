@@ -19,6 +19,8 @@ interface RecentlyWatchedItem extends IPTVChannel {
   watchedAt: number;
 }
 
+const EMPTY_CHANNELS: IPTVChannel[] = [];
+
 export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [playlists, setPlaylists] = useState<IPTVPlaylist[]>([]);
@@ -404,15 +406,12 @@ export default function Home() {
 
   const handleSelectPlaylist = useCallback((id: string) => {
     setActivePlaylistId(id);
-    setPlaylists(prevPlaylists => {
-      const target = prevPlaylists.find(p => p.id === id);
-      if (target && target.channels.length > 0) {
-        setActiveChannel(target.channels[0]);
-      } else {
-        setActiveChannel(null);
-      }
-      return prevPlaylists;
-    });
+    const target = playlistsRef.current.find(p => p.id === id);
+    if (target && target.channels.length > 0) {
+      setActiveChannel(target.channels[0]);
+    } else {
+      setActiveChannel(null);
+    }
   }, []);
 
   // Toggle Favorites
@@ -1170,7 +1169,7 @@ export default function Home() {
                   </div>
                   
                   <SportsSchedule 
-                    channels={activePlaylist ? activePlaylist.channels : []}
+                    channels={activePlaylist ? activePlaylist.channels : EMPTY_CHANNELS}
                     onSelectChannel={(ch) => {
                       handleSelectChannel(ch);
                       setActiveTab('watch');
@@ -1345,7 +1344,7 @@ export default function Home() {
       {mounted && (
         <LivePlayer 
           channel={activeChannel} 
-          channels={activePlaylist?.channels || []}
+          channels={activePlaylist?.channels ?? EMPTY_CHANNELS}
           onSelectChannel={handleSelectChannel}
           onToggleFavorite={handleToggleFavorite}
           isFavorite={activeChannel ? favorites.includes(activeChannel.id) : false}

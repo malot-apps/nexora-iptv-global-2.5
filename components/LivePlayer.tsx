@@ -47,9 +47,29 @@ export default function LivePlayer({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const lastChannelIdRef = useRef<string | null>(null);
   const failureTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const splashTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sync refs to avoid over-broad dependencies in stream playback
+  const channelsRef = useRef(channels);
+  const onSelectChannelRef = useRef(onSelectChannel);
+
+  useEffect(() => {
+    channelsRef.current = channels;
+  }, [channels]);
+
+  useEffect(() => {
+    onSelectChannelRef.current = onSelectChannel;
+  }, [onSelectChannel]);
+
+  // General unmount cleanup to avoid any stray timeouts
+  useEffect(() => {
+    return () => {
+      if (hudTimeoutRef.current) clearTimeout(hudTimeoutRef.current);
+      if (failureTimeoutRef.current) clearTimeout(failureTimeoutRef.current);
+      if (splashTimeoutRef.current) clearTimeout(splashTimeoutRef.current);
+    };
+  }, []);
 
   // Core Playback State
   const [isPlaying, setIsPlaying] = useState(false);
@@ -82,12 +102,16 @@ export default function LivePlayer({
   const draggingRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
 
-  // Reset mini player dismissed state when channel changes during render
-  const [prevChannelId, setPrevChannelId] = useState<string | null>(null);
-  if (channel?.id !== prevChannelId) {
-    setPrevChannelId(channel?.id || null);
+  // Dedicated channel-change effect
+  useEffect(() => {
+    setRetryCount(0);
+    setErrorMsg(null);
     setIsMiniDismissed(false);
-  }
+    if (failureTimeoutRef.current) {
+      clearTimeout(failureTimeoutRef.current);
+      failureTimeoutRef.current = null;
+    }
+  }, [channel?.id]);
 
   // Proxy State
   const [resolvedUrl, setResolvedUrl] = useState<string>('');
@@ -213,6 +237,9 @@ export default function LivePlayer({
     setAutoProxy(nextVal);
   };
 
+  const channelUrl = channel?.url;
+  const channelId = channel?.id;
+
   // Resolve stream URL based on auto CORS detection
   useEffect(() => {
     let isCancelled = false;
@@ -221,29 +248,28 @@ export default function LivePlayer({
       await Promise.resolve();
       if (isCancelled) return;
 
-      if (!channel) {
+      if (!channelUrl) {
         setResolvedUrl('');
         return;
       }
 
       setIsResolving(true);
       setErrorMsg(null);
-      const originalUrl = channel.url;
 
       if (autoProxy) {
-        const hasCorsIssue = await detectCorsIssue(originalUrl);
+        const hasCorsIssue = await detectCorsIssue(channelUrl);
         if (isCancelled) return;
 
         if (hasCorsIssue) {
           setCurrentProxyId(preferredProxyId);
-          setResolvedUrl(formatProxiedUrl(originalUrl, preferredProxyId));
+          setResolvedUrl(formatProxiedUrl(channelUrl, preferredProxyId));
         } else {
           setCurrentProxyId('direct');
-          setResolvedUrl(originalUrl);
+          setResolvedUrl(channelUrl);
         }
       } else {
         setCurrentProxyId(preferredProxyId);
-        setResolvedUrl(formatProxiedUrl(originalUrl, preferredProxyId));
+        setResolvedUrl(formatProxiedUrl(channelUrl, preferredProxyId));
       }
       setIsResolving(false);
     };
@@ -253,7 +279,7 @@ export default function LivePlayer({
     return () => {
       isCancelled = true;
     };
-  }, [channel, preferredProxyId, autoProxy]);
+  }, [channelUrl, preferredProxyId, autoProxy]);
 
   // Sync playbackSpeed preference to video player elements
   useEffect(() => {
@@ -265,18 +291,7 @@ export default function LivePlayer({
 
   // Initialize and load stream
   useEffect(() => {
-    if (!channel || !resolvedUrl) return;
-
-    if (lastChannelIdRef.current !== channel.id) {
-      lastChannelIdRef.current = channel.id;
-      setErrorMsg(null);
-      if (retryCount !== 0) {
-        setTimeout(() => {
-          setRetryCount(0);
-        }, 0);
-        return;
-      }
-    }
+    if (!channelId || !resolvedUrl) return;
 
     const video = videoRef.current;
     if (!video) return;
@@ -309,20 +324,24 @@ export default function LivePlayer({
 
         failureTimeoutRef.current = setTimeout(() => {
           setCurrentProxyId(fallbackProxy.id);
-          setResolvedUrl(formatProxiedUrl(channel.url, fallbackProxy.id));
+          if (channelUrl) {
+            setResolvedUrl(formatProxiedUrl(channelUrl, fallbackProxy.id));
+          }
           setRetryCount(prev => prev + 1);
         }, 2000);
       } else {
-        if (channels && channels.length > 1 && onSelectChannel) {
-          const currentIndex = channels.findIndex(ch => ch.id === channel.id);
-          const nextIndex = (currentIndex + 1) % channels.length;
-          const nextChannel = channels[nextIndex];
+        const currentChannels = channelsRef.current;
+        const currentOnSelectChannel = onSelectChannelRef.current;
+        if (currentChannels && currentChannels.length > 1 && currentOnSelectChannel) {
+          const currentIndex = currentChannels.findIndex(ch => ch.id === channelId);
+          const nextIndex = (currentIndex + 1) % currentChannels.length;
+          const nextChannel = currentChannels[nextIndex];
           
           setErrorMsg(`Live track offline. Automatically trying alternative station...`);
           setIsLoading(true);
           failureTimeoutRef.current = setTimeout(() => {
             setRetryCount(0);
-            onSelectChannel(nextChannel);
+            currentOnSelectChannel(nextChannel);
           }, 3000);
         } else {
           setErrorMsg('Stream unavailable. Checked all connection routing options.');
@@ -487,7 +506,7 @@ export default function LivePlayer({
         hlsRef.current = null;
       }
     };
-  }, [resolvedUrl, retryCount, channels, onSelectChannel, channel, currentProxyId, handleToggleFullscreen]);
+  }, [channelId, channelUrl, resolvedUrl, retryCount, currentProxyId, handleToggleFullscreen]);
 
   // Sync volume state
   useEffect(() => {
