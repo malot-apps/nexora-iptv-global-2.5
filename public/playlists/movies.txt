@@ -1,0 +1,9 @@
+# Nexora Public Movies Playlists
+# Add your M3U or direct HLS stream URLs below (one per line).
+# Lines starting with '#' and blank lines are ignored.
+#
+# Fallback Category: Movies
+#
+# Examples:
+# https://example.com/movies-playlist.m3u
+# https://example.com/action-cinema.m3u8

@@ -1,0 +1,9 @@
+# Nexora Public Music Playlists
+# Add your M3U or direct HLS stream URLs below (one per line).
+# Lines starting with '#' and blank lines are ignored.
+#
+# Fallback Category: Music
+#
+# Examples:
+# https://example.com/music-playlist.m3u
+# https://example.com/hits-live.m3u8

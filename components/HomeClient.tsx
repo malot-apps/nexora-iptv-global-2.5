@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { IPTVPlaylist, IPTVChannel, parseM3U } from '@/lib/iptv-parser';
+import { compileGitHubPlaylists } from '@/lib/github-playlists';
 import LivePlayer from '@/components/LivePlayer';
 import PlaylistManager from '@/components/PlaylistManager';
 import ChannelList from '@/components/ChannelList';
@@ -192,95 +193,115 @@ export default function Home() {
     };
   }, [mounted]);
 
-  // Fetch and sync owner-managed playlists from sources.json
+  // Fetch and sync owner-managed and GitHub-managed public playlists
   useEffect(() => {
     if (!mounted) return;
 
     const syncOwnerPlaylists = async () => {
       try {
-        const basePath = '';
-        const res = await fetch(`${basePath}/playlists/sources.json`);
-        if (!res.ok) {
-          console.warn('sources.json was not found or failed to load. Continuing normally.');
-          return;
-        }
-
-        const data = await res.json();
-        if (!data || !Array.isArray(data.playlists)) {
-          console.warn('sources.json is malformed. Continuing normally.');
-          return;
-        }
-
-        const ownerPlaylists = data.playlists.filter((p: any) => p && typeof p === 'object' && p.enabled !== false && p.id && p.name && p.url);
-        if (ownerPlaylists.length === 0) return;
-
         let playlistsUpdated = false;
         let currentPlaylists = [...playlistsRef.current];
 
-        for (const op of ownerPlaylists) {
-          const existing = currentPlaylists.find(p => p.id === op.id);
-          
-          if (!existing || existing.url !== op.url || existing.name !== op.name) {
-            try {
-              let text = '';
-              let fetched = false;
-
-              try {
-                const proxyUrl = `/api/proxy?url=${encodeURIComponent(op.url)}`;
-                const response = await fetch(proxyUrl);
-                if (response.ok) {
-                  text = await response.text();
-                  fetched = true;
-                }
-              } catch (e) {
-                // Ignore and try fallback
+        // 1. Fetch and compile GitHub-managed public playlists
+        try {
+          const githubPlaylist = await compileGitHubPlaylists();
+          if (githubPlaylist) {
+            const existingIndex = currentPlaylists.findIndex(p => p.id === githubPlaylist.id);
+            if (existingIndex !== -1) {
+              // Compare channels count to check for updates
+              if (currentPlaylists[existingIndex].channelsCount !== githubPlaylist.channelsCount ||
+                  currentPlaylists[existingIndex].name !== githubPlaylist.name) {
+                currentPlaylists[existingIndex] = githubPlaylist;
+                playlistsUpdated = true;
               }
-
-              if (!fetched) {
-                try {
-                  const publicProxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(op.url)}`;
-                  const response = await fetch(publicProxyUrl);
-                  if (response.ok) {
-                    text = await response.text();
-                    fetched = true;
-                  }
-                } catch (e) {
-                  // Ignore and try direct
-                }
-              }
-
-              if (!fetched) {
-                const response = await fetch(op.url);
-                if (response.ok) {
-                  text = await response.text();
-                  fetched = true;
-                }
-              }
-
-              if (fetched && text) {
-                const channels = parseM3U(text);
-                if (channels.length > 0) {
-                  const parsedPlaylist: IPTVPlaylist = {
-                    id: op.id,
-                    name: op.name,
-                    channelsCount: channels.length,
-                    url: op.url,
-                    channels: channels,
-                    isOwnerManaged: true
-                  };
-
-                  if (existing) {
-                    currentPlaylists = currentPlaylists.map(p => p.id === op.id ? parsedPlaylist : p);
-                  } else {
-                    currentPlaylists.push(parsedPlaylist);
-                  }
-                  playlistsUpdated = true;
-                }
-              }
-            } catch (err) {
-              console.error(`Failed to fetch owner playlist: ${op.name}`, err);
+            } else {
+              // Prepend the public playlist
+              currentPlaylists = [githubPlaylist, ...currentPlaylists];
+              playlistsUpdated = true;
             }
           }
+        } catch (githubErr) {
+          console.error('Failed to compile GitHub public playlists:', githubErr);
+        }
+
+        // 2. Fetch and sync owner-managed playlists from sources.json
+        try {
+          const res = await fetch('/playlists/sources.json');
+          if (res.ok) {
+            const data = await res.json();
+            if (data && Array.isArray(data.playlists)) {
+              const ownerPlaylists = data.playlists.filter(
+                (p: any) => p && typeof p === 'object' && p.enabled !== false && p.id && p.name && p.url
+              );
+
+              for (const op of ownerPlaylists) {
+                const existing = currentPlaylists.find(p => p.id === op.id);
+                if (!existing || existing.url !== op.url || existing.name !== op.name) {
+                  try {
+                    let text = '';
+                    let fetched = false;
+
+                    try {
+                      const proxyUrl = `/api/proxy?url=${encodeURIComponent(op.url)}`;
+                      const response = await fetch(proxyUrl);
+                      if (response.ok) {
+                        text = await response.text();
+                        fetched = true;
+                      }
+                    } catch (e) {
+                      // Try fallback proxy next
+                    }
+
+                    if (!fetched) {
+                      try {
+                        const publicProxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(op.url)}`;
+                        const response = await fetch(publicProxyUrl);
+                        if (response.ok) {
+                          text = await response.text();
+                          fetched = true;
+                        }
+                      } catch (e) {
+                        // Try direct fetch next
+                      }
+                    }
+
+                    if (!fetched) {
+                      const response = await fetch(op.url);
+                      if (response.ok) {
+                        text = await response.text();
+                        fetched = true;
+                      }
+                    }
+
+                    if (fetched && text) {
+                      const channels = parseM3U(text);
+                      if (channels.length > 0) {
+                        const parsedPlaylist: IPTVPlaylist = {
+                          id: op.id,
+                          name: op.name,
+                          channelsCount: channels.length,
+                          url: op.url,
+                          channels: channels,
+                          isOwnerManaged: true
+                        };
+
+                        if (existing) {
+                          currentPlaylists = currentPlaylists.map(p => p.id === op.id ? parsedPlaylist : p);
+                        } else {
+                          currentPlaylists.push(parsedPlaylist);
+                        }
+                        playlistsUpdated = true;
+                      }
+                    }
+                  } catch (err) {
+                    console.error(`Failed to fetch owner playlist: ${op.name}`, err);
+                  }
+                }
+              }
+            }
+          }
+        } catch (sourcesErr) {
+          console.warn('sources.json was not found or failed to load. Continuing normally.');
         }
 
         if (playlistsUpdated) {
@@ -289,15 +310,28 @@ export default function Home() {
 
           const currentActive = currentPlaylists.find(p => p.id === activePlaylistId);
           if (!currentActive && currentPlaylists.length > 0) {
-            const firstPlaylist = currentPlaylists[0];
-            setActivePlaylistId(firstPlaylist.id);
-            if (firstPlaylist.channels.length > 0) {
-              setActiveChannel(firstPlaylist.channels[0]);
+            // Prefer github_public if available, otherwise first
+            const preferPL = currentPlaylists.find(p => p.id === 'github_public') || currentPlaylists[0];
+            setActivePlaylistId(preferPL.id);
+            if (preferPL.channels.length > 0) {
+              setActiveChannel(preferPL.channels[0]);
+              setActiveTab('watch');
+            }
+          }
+        } else {
+          // Ensure active playlist is initialized if none is active
+          const currentActive = currentPlaylists.find(p => p.id === activePlaylistId);
+          if (!currentActive && currentPlaylists.length > 0) {
+            const preferPL = currentPlaylists.find(p => p.id === 'github_public') || currentPlaylists[0];
+            setActivePlaylistId(preferPL.id);
+            if (preferPL.channels.length > 0) {
+              setActiveChannel(preferPL.channels[0]);
+              setActiveTab('watch');
             }
           }
         }
       } catch (e) {
-        console.error('Failed to sync owner playlists:', e);
+        console.error('Failed to sync owner and public playlists:', e);
       }
     };
 

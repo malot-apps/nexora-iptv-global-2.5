@@ -1,0 +1,9 @@
+# Nexora Public International Playlists
+# Add your M3U or direct HLS stream URLs below (one per line).
+# Lines starting with '#' and blank lines are ignored.
+#
+# Fallback Category: International
+#
+# Examples:
+# https://example.com/world-playlist.m3u
+# https://example.com/global-stream.m3u8

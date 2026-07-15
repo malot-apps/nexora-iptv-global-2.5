@@ -1,0 +1,9 @@
+# Nexora Public Sports Playlists
+# Add your M3U or direct HLS stream URLs below (one per line).
+# Lines starting with '#' and blank lines are ignored.
+#
+# Fallback Category: Sports
+#
+# Examples:
+# https://example.com/sports-playlist.m3u
+# https://example.com/live-cricket.m3u8

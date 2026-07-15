@@ -1,0 +1,9 @@
+# Nexora Public Kids Playlists
+# Add your M3U or direct HLS stream URLs below (one per line).
+# Lines starting with '#' and blank lines are ignored.
+#
+# Fallback Category: Kids
+#
+# Examples:
+# https://example.com/kids-channels.m3u
+# https://example.com/cartoons-live.m3u8

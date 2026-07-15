@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "NODE_ENV=production next build",
     "start": "next start",
     "lint": "next lint"
   },
@@ -17,7 +17,7 @@
     "hls.js": "^1.6.16",
     "lucide-react": "^0.553.0",
     "motion": "^12.23.24",
-    "next": "15.5.9",
+    "next": "15.1.7",
     "postcss": "^8.5.6",
     "react": "19.0.0",
     "react-dom": "19.0.0",

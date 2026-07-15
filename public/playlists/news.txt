@@ -1,0 +1,9 @@
+# Nexora Public News Playlists
+# Add your M3U or direct HLS stream URLs below (one per line).
+# Lines starting with '#' and blank lines are ignored.
+#
+# Fallback Category: News
+#
+# Examples:
+# https://example.com/news-playlist.m3u
+# https://example.com/24h-news.m3u8
