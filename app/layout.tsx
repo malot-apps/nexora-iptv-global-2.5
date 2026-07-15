@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from 'next';
+import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -25,6 +27,8 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
     <html lang="en" className="dark scroll-smooth">
       <body suppressHydrationWarning className="bg-[#02040a] text-slate-100 antialiased selection:bg-blue-500 selection:text-black min-h-screen">
         {children}
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
