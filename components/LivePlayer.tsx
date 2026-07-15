@@ -62,8 +62,11 @@ export default function LivePlayer({
     onSelectChannelRef.current = onSelectChannel;
   }, [onSelectChannel]);
 
+  const [isMounted, setIsMounted] = useState(false);
+
   // General unmount cleanup to avoid any stray timeouts
   useEffect(() => {
+    setIsMounted(true);
     return () => {
       if (hudTimeoutRef.current) clearTimeout(hudTimeoutRef.current);
       if (failureTimeoutRef.current) clearTimeout(failureTimeoutRef.current);
@@ -806,9 +809,16 @@ export default function LivePlayer({
 
   const showMiniPlayer = isMini && channel && (isPlaying || isLoading || isBuffering) && !isMiniDismissed;
 
+  // 1. Hydra / Mount guard: Ensure we only compile DOM portals and JSX after mounting on client.
+  if (!isMounted) {
+    return null;
+  }
+
+  // 2. Mini player rendering guard
   if (isMini) {
     if (!showMiniPlayer) return null;
   } else {
+    // 3. Channel watch mode selection placeholder
     if (!channel) {
       return (
         <div className="flex flex-col items-center justify-center h-[500px] border border-dashed border-white/10 rounded-2xl bg-white/5 text-center px-4 backdrop-blur-lg">
@@ -826,7 +836,7 @@ export default function LivePlayer({
     ? "relative w-full h-full bg-black overflow-hidden group select-none"
     : "relative aspect-video w-full rounded-2xl bg-black border border-white/10 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] group select-none";
 
-  const videoContainerJSX = (
+  const videoContainerJSX = channel ? (
     <div 
       ref={containerRef}
       id="live-player-container"
@@ -1255,9 +1265,9 @@ export default function LivePlayer({
 
         </div>
       </div>
-    );
+    ) : null;
 
-  const infoPanelJSX = (
+  const infoPanelJSX = channel ? (
     <div className="bg-white/5 border border-white/10 rounded-2xl p-5 backdrop-blur-md flex items-start justify-between gap-4">
         <div className="space-y-1.5 flex-1">
           <div className="flex items-center gap-2.5 flex-wrap">
@@ -1282,7 +1292,7 @@ export default function LivePlayer({
           Reload Feed
         </button>
       </div>
-    );
+    ) : null;
 
   const miniPlayerShell = showMiniPlayer ? (
     <div 

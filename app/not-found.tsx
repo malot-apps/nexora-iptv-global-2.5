@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 
 export default function NotFound() {
   return (
@@ -27,12 +28,12 @@ export default function NotFound() {
         <p className="text-xs text-slate-400 mb-6">
           The requested media playlist, feed parser, or interface layout is currently unreachable.
         </p>
-        <a
-          href="/nexora-iptv-global-2.5/"
+        <Link
+          href="/"
           className="px-4 py-2 bg-blue-600 hover:bg-blue-500 transition-colors text-white text-xs font-semibold rounded inline-block"
         >
           Return to Console
-        </a>
+        </Link>
       </div>
     </div>
   );
