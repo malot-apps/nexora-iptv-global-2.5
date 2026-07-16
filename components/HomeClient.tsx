@@ -208,9 +208,14 @@ export default function Home() {
           if (githubPlaylist) {
             const existingIndex = currentPlaylists.findIndex(p => p.id === githubPlaylist.id);
             if (existingIndex !== -1) {
-              // Compare channels count to check for updates
-              if (currentPlaylists[existingIndex].channelsCount !== githubPlaylist.channelsCount ||
-                  currentPlaylists[existingIndex].name !== githubPlaylist.name) {
+              const cached = currentPlaylists[existingIndex];
+              const isDifferent = 
+                cached.channelsCount !== githubPlaylist.channelsCount ||
+                cached.name !== githubPlaylist.name ||
+                cached.channels.length !== githubPlaylist.channels.length ||
+                cached.channels[0]?.id !== githubPlaylist.channels[0]?.id;
+
+              if (isDifferent) {
                 currentPlaylists[existingIndex] = githubPlaylist;
                 playlistsUpdated = true;
               }
@@ -914,7 +919,7 @@ export default function Home() {
             </div>
             <div className="flex items-center gap-2 border-r border-white/10 pr-6">
               <Trophy className="w-3.5 h-3.5 text-purple-400" />
-              <span>Active Playlists: <strong className="text-white font-bold">{mounted ? playlists.length : '--'}</strong></span>
+              <span>Loaded Playlists: <strong className="text-white font-bold">{mounted ? playlists.length : '--'}</strong></span>
             </div>
             <div className="flex items-center gap-2">
               <Activity className="w-3.5 h-3.5 text-indigo-400" />
